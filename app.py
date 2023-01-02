@@ -175,7 +175,7 @@ class GenreView(Resource):
         all_movies = db.session.query(Movie).all()
         movie_in_genre = []
         for i in all_movies:
-            if i.genre_id == genre:
+            if i.genre_id == gid:
                 movie_in_genre.append(movie_schema.dump(i))
         return [genre_schema.dump(genre), movie_in_genre], 200
 
