@@ -1,4 +1,4 @@
-# app.py
+
 
 from flask import Flask, request
 from flask_restx import Api, Resource
@@ -140,6 +140,15 @@ class DirectorsView(Resource):
         except Exception as e:
             return str(e)
 
+    def post(self):
+        try:
+            req_json = request.json
+            new_director = Director(**req_json)
+            with db.session.begin():
+                db.session.add(new_director)
+            return "", 201
+        except Exception as e:
+            return str(e)
 
 @directors_ns.route('/<int:did>')
 class DirectorView(Resource):
@@ -154,6 +163,21 @@ class DirectorView(Resource):
             if i.director_id == did:
                 movie_in_directors.append(movie_schema.dump(i))
         return [director_schema.dump(director), movie_in_directors], 200
+    def put(self,did):
+        director = Director.query.get(did)
+        if not director:
+            return "Not Found", 404
+        req_json = request.json
+        director.id = req_json.get("id")
+        director.name = req_json.get("name")
+        db.session.add(Director)
+        db.session.commit()
+    def delete(self,did):
+        director = Director.query.get(did)
+        if not director:
+            return "", 404
+        db.session.delete(director)
+        db.session.commit()
 
 
 @genres_ns.route('/')
@@ -164,6 +188,17 @@ class GenresView(Resource):
             return genres_schema.dump(all_genres), 200
         except Exception as e:
             return str(e)
+    def post(self):
+        try:
+            req_json = request.json
+            new_genre = Genre(**req_json)
+            with db.session.begin():
+                db.session.add(new_genre)
+            return "", 201
+        except Exception as e:
+            return str(e)
+
+
 
 
 @genres_ns.route('/<int:gid>')
@@ -178,6 +213,24 @@ class GenreView(Resource):
             if i.genre_id == gid:
                 movie_in_genre.append(movie_schema.dump(i))
         return [genre_schema.dump(genre), movie_in_genre], 200
+
+    def put(self, gid):
+        genre = Genre.query.get(gid)
+        if not genre:
+            return "Not Found", 404
+        req_json = request.json
+        genre.id = req_json.get("id")
+        genre.name = req_json.get("name")
+        db.session.add(Director)
+        db.session.commit()
+
+    def delete(self, gid):
+        genre = Genre.query.get(gid)
+        if not genre:
+            return "", 404
+        db.session.delete(genre)
+        db.session.commit()
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=2000)
