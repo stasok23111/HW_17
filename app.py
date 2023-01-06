@@ -96,6 +96,19 @@ class MoviesViews(Resource):
         except Exception as e:
             return str(e)
 
+@movie_ns.route('/<int:director_id>')
+class MoviesViews(Resource):
+    def get(self, director_id):
+        director = Director.query.get(director_id)
+        if not director:
+            return "Not Found", 404
+
+        all_movies = db.session.query(Movie).all()
+        movie_in_directors = []
+        for i in all_movies:
+            if i.director_id == director_id:
+                movie_in_directors.append(movie_schema.dump(i))
+        return [director_schema.dump(director), movie_in_directors], 200
 
 @movie_ns.route('/<int:mid>')
 class MovieViews(Resource):
@@ -157,12 +170,6 @@ class DirectorView(Resource):
         if not director:
             return "Not Found", 404
 
-        all_movies = db.session.query(Movie).all()
-        movie_in_directors = []
-        for i in all_movies:
-            if i.director_id == did:
-                movie_in_directors.append(movie_schema.dump(i))
-        return [director_schema.dump(director), movie_in_directors], 200
     def put(self,did):
         director = Director.query.get(did)
         if not director:
