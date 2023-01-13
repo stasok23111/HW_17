@@ -1,5 +1,3 @@
-
-
 from flask import Flask, request
 from flask_restx import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
@@ -80,11 +78,16 @@ genres_schema = GenreSchema(many=True)
 @movie_ns.route('/')
 class MoviesViews(Resource):
     def get(self):
-        try:
-            all_movies = db.session.query(Movie).all()
+        all_movies_ =db.session.query(Movie)
+        director_id = request.args.get("director_id")
+        genre_id = request.args.get("genre_id")
+        if director_id:
+            all_movies = all_movies_.filter(Movie.director_id == director_id)
             return movies_schema.dump(all_movies), 200
-        except Exception as e:
-            return str(e), 404
+        if genre_id:
+            all_movies = all_movies_.filter(Movie.genre_id == genre_id)
+            return movies_schema.dump(all_movies), 200
+
 
     def post(self):
         try:
@@ -96,28 +99,14 @@ class MoviesViews(Resource):
         except Exception as e:
             return str(e)
 
-@movie_ns.route('/<int:director_id>')
-class MoviesViews(Resource):
-    def get(self, director_id):
-        director = Director.query.get(director_id)
-        if not director:
-            return "Not Found", 404
-
-        all_movies = db.session.query(Movie).all()
-        movie_in_directors = []
-        for i in all_movies:
-            if i.director_id == director_id:
-                movie_in_directors.append(movie_schema.dump(i))
-        return [director_schema.dump(director), movie_in_directors], 200
 
 @movie_ns.route('/<int:mid>')
-class MovieViews(Resource):
+class MoviesViews(Resource):
     def get(self, mid):
-        try:
-            movie = Movie.query.get(mid)
-            return movie_schema.dump(movie), 200
-        except Exception as e:
-            return str(e)
+
+        movie = Movie.query.get(mid)
+        return movie_schema.dump(movie)
+
 
     def put(self, mid: int):
         movie = Movie.query.get(mid)
@@ -163,14 +152,21 @@ class DirectorsView(Resource):
         except Exception as e:
             return str(e)
 
+
 @directors_ns.route('/<int:did>')
 class DirectorView(Resource):
     def get(self, did):
         director = Director.query.get(did)
         if not director:
             return "Not Found", 404
+        all_movies = db.session.query(Movie).all()
+        movie_in_director = []
+        for i in all_movies:
+            if i.genre_id == did:
+                movie_in_director.append(movie_schema.dump(i))
+        return [director_schema.dump(director), movie_in_director], 200
 
-    def put(self,did):
+    def put(self, did):
         director = Director.query.get(did)
         if not director:
             return "Not Found", 404
@@ -179,7 +175,8 @@ class DirectorView(Resource):
         director.name = req_json.get("name")
         db.session.add(Director)
         db.session.commit()
-    def delete(self,did):
+
+    def delete(self, did):
         director = Director.query.get(did)
         if not director:
             return "", 404
@@ -195,6 +192,7 @@ class GenresView(Resource):
             return genres_schema.dump(all_genres), 200
         except Exception as e:
             return str(e)
+
     def post(self):
         try:
             req_json = request.json
@@ -204,8 +202,6 @@ class GenresView(Resource):
             return "", 201
         except Exception as e:
             return str(e)
-
-
 
 
 @genres_ns.route('/<int:gid>')
